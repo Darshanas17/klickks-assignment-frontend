@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { BeatLoader } from "react-spinners";
 import "../App.css";
@@ -16,10 +15,12 @@ function Login() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    axios
-      .get(`${API_URL}/api/dashboard`, { withCredentials: true })
-      .then(() => {
-        navigate("/dashboard");
+    fetch(`${API_URL}/api/dashboard`, {
+      method: "GET",
+      credentials: "include", // same as withCredentials: true
+    })
+      .then((res) => {
+        if (res.ok) navigate("/dashboard");
       })
       .catch(() => {});
   }, [navigate]);
@@ -28,23 +29,30 @@ function Login() {
     e.preventDefault();
     setStatus("loading");
     setMessage("Please wait...");
+
     try {
-      const res = await axios.post(
-        `${API_URL}/api/login`,
-        { email, password },
-        { withCredentials: true }
-      );
-      if (res.data.message === true) {
+      const res = await fetch(`${API_URL}/api/login`, {
+        method: "POST",
+        credentials: "include", // important for cookies/session
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+
+      if (data.message === "Login successful") {
         setStatus("success");
         setMessage("Login successful");
         setTimeout(() => {
           navigate("/dashboard");
-        }, 500);
+        }, 1000);
       } else {
         setStatus("error");
-        setMessage(res.data.message || "Invalid credentials");
+        setMessage(data.message || "Invalid credentials");
       }
-    } catch {
+    } catch (err) {
       setStatus("error");
       setMessage("Server error. Try again.");
     }

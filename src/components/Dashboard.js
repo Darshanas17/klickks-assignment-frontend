@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import "../App.css";
 
@@ -16,17 +15,37 @@ function Dashboard() {
       hour < 12 ? "Good Morning" : hour < 18 ? "Good Afternoon" : "Good Evening"
     );
 
-    axios
-      .get(`${API_URL}/api/dashboard`, { withCredentials: true })
-      .then((res) => setUserId(res.data.userId))
-      .catch(() => navigate("/login"));
+    fetch(`${API_URL}/api/dashboard`, {
+      method: "GET",
+      credentials: "include",
+    })
+      .then(async (res) => {
+        if (!res.ok) throw new Error("Not authenticated");
+        const data = await res.json();
+        setUserId(data.userId);
+      })
+      .catch((error) => {
+        console.error("Authentication error:", error);
+        navigate("/login");
+      });
   }, [navigate]);
 
   const handleLogout = async () => {
     try {
-      await axios.post(`${API_URL}/api/logout`, {}, { withCredentials: true });
-      navigate("/login");
-    } catch {
+      const res = await fetch(`${API_URL}/api/logout`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (res.ok) {
+        navigate("/login");
+      } else {
+        alert("Logout failed. Please try again.");
+      }
+    } catch (err) {
       alert("Logout failed. Please try again.");
     }
   };

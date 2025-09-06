@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -7,21 +8,38 @@ import {
 import Register from "./components/Register";
 import Login from "./components/Login";
 import Dashboard from "./components/Dashboard";
+import Loading from "./components/Loading";
+
+const API_URL = process.env.REACT_APP_API_URL;
 
 function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(null);
+
+  useEffect(() => {
+    fetch(`${API_URL}/api/dashboard`, {
+      method: "GET",
+      credentials: "include",
+    })
+      .then((res) => {
+        if (res.ok) setIsAuthenticated(true);
+        else setIsAuthenticated(false);
+      })
+      .catch(() => setIsAuthenticated(false));
+  }, []);
+
+  if (isAuthenticated === null) {
+    return <Loading />;
+  }
+
   return (
     <Router>
       <Routes>
-        {/* Protected Dashboard */}
-        <Route path="/dashboard" element={<Dashboard />} />
-
-        {/* Login */}
+        <Route
+          path="/dashboard"
+          element={isAuthenticated ? <Dashboard /> : <Navigate to="/login" />}
+        />
         <Route path="/login" element={<Login />} />
-
-        {/* Register */}
         <Route path="/register" element={<Register />} />
-
-        {/* Default route */}
         <Route path="/" element={<Navigate to="/login" />} />
       </Routes>
     </Router>

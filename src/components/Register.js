@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { BeatLoader } from "react-spinners";
 import "../App.css";
@@ -17,42 +16,65 @@ function Register() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    axios
-      .get(`${API_URL}/api/dashboard`, { withCredentials: true })
-      .then(() => {
-        navigate("/dashboard");
+    fetch(`${API_URL}/api/dashboard`, {
+      method: "GET",
+      credentials: "include",
+    })
+      .then((res) => {
+        if (res.ok) navigate("/dashboard");
       })
       .catch(() => {});
   }, [navigate]);
 
-  const validatePassword = (pw) =>
-    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{6,}$/.test(pw);
-
   const handleRegister = async (e) => {
     e.preventDefault();
-    if (!validatePassword(password))
-      return setStatus("error"), setMessage("Weak password");
-    if (password !== confirmPassword)
-      return setStatus("error"), setMessage("Passwords do not match");
+
+    if (password !== confirmPassword) {
+      setStatus("error");
+      setMessage("Passwords do not match");
+      return;
+    }
+
+    const passwordErrors = [];
+    if (password.length < 6) passwordErrors.push("at least 6 characters");
+    if (!/(?=.*[a-z])/.test(password))
+      passwordErrors.push("a lowercase letter");
+    if (!/(?=.*[A-Z])/.test(password))
+      passwordErrors.push("an uppercase letter");
+    if (!/(?=.*\d)/.test(password)) passwordErrors.push("a number");
+    if (!/(?=.*[@$!%*?&])/.test(password))
+      passwordErrors.push("a special character (@$!%*?&)");
+
+    if (passwordErrors.length > 0) {
+      setStatus("error");
+      setMessage(`Password must contain: ${passwordErrors.join(", ")}`);
+      return;
+    }
 
     setStatus("loading");
     setMessage("Please wait...");
     try {
-      const res = await axios.post(
-        `${API_URL}/api/register`,
-        { email, password },
-        { withCredentials: true }
-      );
+      const res = await fetch(`${API_URL}/api/register`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+
       if (
         res.status === 201 ||
-        res.data.message?.toLowerCase().includes("success")
+        data.message?.toLowerCase().includes("success")
       ) {
         setStatus("success");
         setMessage("Account created");
         setTimeout(() => navigate("/login"), 1200);
       } else {
         setStatus("error");
-        setMessage(res.data.message || "Registration failed");
+        setMessage(data.message || "Registration failed");
       }
     } catch {
       setStatus("error");
