@@ -2,11 +2,12 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../App.css";
 
-const API_URL = process.env.REACT_APP_API_URL;
+const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
-function Dashboard() {
+function Dashboard({ setIsAuthenticated }) {
   const [userId, setUserId] = useState(null);
   const [greeting, setGreeting] = useState("");
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -24,10 +25,10 @@ function Dashboard() {
         const data = await res.json();
         setUserId(data.userId);
       })
-      .catch((error) => {
-        console.error("Authentication error:", error);
+      .catch(() => {
         navigate("/login");
-      });
+      })
+      .finally(() => setLoading(false));
   }, [navigate]);
 
   const handleLogout = async () => {
@@ -35,20 +36,26 @@ function Dashboard() {
       const res = await fetch(`${API_URL}/api/logout`, {
         method: "POST",
         credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
       });
 
       if (res.ok) {
+        setIsAuthenticated(false); // 🔹 update auth state
         navigate("/login");
       } else {
         alert("Logout failed. Please try again.");
       }
-    } catch (err) {
+    } catch {
       alert("Logout failed. Please try again.");
     }
   };
+
+  if (loading) {
+    return (
+      <div className="dashboard-page">
+        <p>Loading your dashboard...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="dashboard-page">
@@ -68,7 +75,7 @@ function Dashboard() {
               Your User ID: <strong>{userId}</strong>
             </>
           ) : (
-            "Loading user info..."
+            "Could not load user info."
           )}
         </p>
       </div>

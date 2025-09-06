@@ -3,9 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { BeatLoader } from "react-spinners";
 import "../App.css";
 
-const API_URL = process.env.REACT_APP_API_URL;
+const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
-function Register() {
+function Register({ setIsAuthenticated }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -15,6 +15,7 @@ function Register() {
 
   const navigate = useNavigate();
 
+  // 🔹 If already logged in, redirect to dashboard
   useEffect(() => {
     fetch(`${API_URL}/api/dashboard`, {
       method: "GET",
@@ -35,6 +36,7 @@ function Register() {
       return;
     }
 
+    // ✅ Password rules
     const passwordErrors = [];
     if (password.length < 6) passwordErrors.push("at least 6 characters");
     if (!/(?=.*[a-z])/.test(password))
@@ -53,25 +55,22 @@ function Register() {
 
     setStatus("loading");
     setMessage("Please wait...");
+
     try {
       const res = await fetch(`${API_URL}/api/register`, {
         method: "POST",
         credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
 
       const data = await res.json();
 
-      if (
-        res.status === 201 ||
-        data.message?.toLowerCase().includes("success")
-      ) {
+      if (res.ok) {
         setStatus("success");
-        setMessage("Account created");
-        setTimeout(() => navigate("/login"), 1200);
+        setMessage("Account created! Redirecting...");
+        setIsAuthenticated(true); // 🔹 mark as logged in
+        setTimeout(() => navigate("/dashboard"), 1200);
       } else {
         setStatus("error");
         setMessage(data.message || "Registration failed");

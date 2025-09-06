@@ -3,9 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { BeatLoader } from "react-spinners";
 import "../App.css";
 
-const API_URL = process.env.REACT_APP_API_URL;
+const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
-function Login() {
+function Login({ setIsAuthenticated }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -14,10 +14,11 @@ function Login() {
 
   const navigate = useNavigate();
 
+  // 🔹 If already logged in, redirect to dashboard
   useEffect(() => {
     fetch(`${API_URL}/api/dashboard`, {
       method: "GET",
-      credentials: "include", // same as withCredentials: true
+      credentials: "include",
     })
       .then((res) => {
         if (res.ok) navigate("/dashboard");
@@ -33,26 +34,23 @@ function Login() {
     try {
       const res = await fetch(`${API_URL}/api/login`, {
         method: "POST",
-        credentials: "include", // important for cookies/session
-        headers: {
-          "Content-Type": "application/json",
-        },
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
 
       const data = await res.json();
 
-      if (data.message === "Login successful") {
+      if (res.ok) {
         setStatus("success");
         setMessage("Login successful");
-        setTimeout(() => {
-          navigate("/dashboard");
-        }, 1000);
+        setIsAuthenticated(true); // 🔹 update auth state
+        setTimeout(() => navigate("/dashboard"), 1000);
       } else {
         setStatus("error");
         setMessage(data.message || "Invalid credentials");
       }
-    } catch (err) {
+    } catch {
       setStatus("error");
       setMessage("Server error. Try again.");
     }
