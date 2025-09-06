@@ -270,3 +270,11 @@ body {
   height: 100vh;
   background-color: #f4f6f9;
 }
+* {
+  caret-color: transparent;
+  outline: none;
+}
+input,
+textarea {
+  caret-color: auto;
+}

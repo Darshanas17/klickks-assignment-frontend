@@ -10,24 +10,39 @@ import Login from "./components/Login";
 import Dashboard from "./components/Dashboard";
 import Loading from "./components/Loading";
 
+// Use environment variable, fallback to localhost
 const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   // 🔹 Check session on app load
   useEffect(() => {
-    fetch(`${API_URL}/api/dashboard`, {
-      method: "GET",
-      credentials: "include",
-    })
-      .then((res) => {
-        setIsAuthenticated(res.ok);
-      })
-      .catch(() => setIsAuthenticated(false));
+    const checkSession = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/dashboard`, {
+          method: "GET",
+          credentials: "include", // send cookies
+        });
+
+        if (res.ok) {
+          setIsAuthenticated(true);
+        } else {
+          setIsAuthenticated(false);
+        }
+      } catch (err) {
+        console.error("Error checking session:", err);
+        setIsAuthenticated(false);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkSession();
   }, []);
 
-  if (isAuthenticated === null) {
+  if (loading) {
     return <Loading />;
   }
 
@@ -41,7 +56,7 @@ function App() {
             isAuthenticated ? (
               <Dashboard setIsAuthenticated={setIsAuthenticated} />
             ) : (
-              <Navigate to="/login" />
+              <Navigate to="/login" replace />
             )
           }
         />
@@ -51,7 +66,7 @@ function App() {
           path="/login"
           element={
             isAuthenticated ? (
-              <Navigate to="/dashboard" />
+              <Navigate to="/dashboard" replace />
             ) : (
               <Login setIsAuthenticated={setIsAuthenticated} />
             )
@@ -63,7 +78,7 @@ function App() {
           path="/register"
           element={
             isAuthenticated ? (
-              <Navigate to="/dashboard" />
+              <Navigate to="/dashboard" replace />
             ) : (
               <Register setIsAuthenticated={setIsAuthenticated} />
             )
@@ -71,7 +86,7 @@ function App() {
         />
 
         {/* Default route */}
-        <Route path="/" element={<Navigate to="/login" />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </Router>
   );
