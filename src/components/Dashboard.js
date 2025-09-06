@@ -16,9 +16,10 @@ function Dashboard({ setIsAuthenticated }) {
       hour < 12 ? "Good Morning" : hour < 18 ? "Good Afternoon" : "Good Evening"
     );
 
+    // Fetch user info
     fetch(`${API_URL}/api/dashboard`, {
       method: "GET",
-      credentials: "include",
+      credentials: "include", // important for cookies
     })
       .then(async (res) => {
         if (!res.ok) throw new Error("Not authenticated");
@@ -26,10 +27,11 @@ function Dashboard({ setIsAuthenticated }) {
         setUserId(data.userId);
       })
       .catch(() => {
+        setIsAuthenticated(false); // update auth state
         navigate("/login");
       })
       .finally(() => setLoading(false));
-  }, [navigate]);
+  }, [navigate, setIsAuthenticated]);
 
   const handleLogout = async () => {
     try {
@@ -39,7 +41,7 @@ function Dashboard({ setIsAuthenticated }) {
       });
 
       if (res.ok) {
-        setIsAuthenticated(false); // 🔹 update auth state
+        setIsAuthenticated(false); // update auth state
         navigate("/login");
       } else {
         alert("Logout failed. Please try again.");
